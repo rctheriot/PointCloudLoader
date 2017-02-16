@@ -2,9 +2,11 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using System.Collections;
+using System.Threading;
+using System.Collections.Generic;
 
-public class PointCloudLoaderWindow : EditorWindow
-{
+public class PointCloudLoaderWindow : EditorWindow {
     //Number of elements per data line from input file
     private static int elementsPerLine = 0;
 
@@ -13,8 +15,7 @@ public class PointCloudLoaderWindow : EditorWindow
 
     //Enumerator for PointCloud color range
     //None = No Color, Normalized = 0-1.0f, RGB = 0-255
-    private enum ColorRange
-    {
+    private enum ColorRange {
         NONE = 0,
         NORMALIZED = 1,
         RGB = 255
@@ -28,16 +29,14 @@ public class PointCloudLoaderWindow : EditorWindow
     static int limitPoints = 65000;
 
     [MenuItem("Window/PointClouds/LoadCloud")]
-    private static void ShowEditor()
-    {
+    private static void ShowEditor() {
         EditorWindow window = GetWindow(typeof(PointCloudLoaderWindow), true, "Point Cload Loader");
-        window.maxSize = new Vector2 (385f, 355f);
+        window.maxSize = new Vector2(385f, 355f);
         window.minSize = window.maxSize;
     }
 
     //GUI Window Stuff - NO COMMENTS
-    private void OnGUI()
-    {
+    private void OnGUI() {
 
         GUIStyle help = new GUIStyle(GUI.skin.label);
         help.fontSize = 12;
@@ -56,40 +55,37 @@ public class PointCloudLoaderWindow : EditorWindow
 
         EditorGUILayout.BeginHorizontal();
 
-            EditorGUILayout.BeginVertical();
-                elementsPerLine = EditorGUILayout.IntField(new GUIContent("Elements Per Data Line", "The Number of Elements in the data line"), elementsPerLine);
-                dataDelimiter = EditorGUILayout.TextField(new GUIContent("Data Line Delimiter", "Leave blank for white space between elements"), dataDelimiter);
-                xPOS = EditorGUILayout.IntField(new GUIContent("X Index", "Index of X in data line"), xPOS);
-                yPOS = EditorGUILayout.IntField(new GUIContent("Y Index", "Index of Y in data line"), yPOS);
-                zPOS = EditorGUILayout.IntField(new GUIContent("Z Index", "Index of Z in data line"), zPOS);
+        EditorGUILayout.BeginVertical();
+        elementsPerLine = EditorGUILayout.IntField(new GUIContent("Elements Per Data Line", "The Number of Elements in the data line"), elementsPerLine);
+        dataDelimiter = EditorGUILayout.TextField(new GUIContent("Data Line Delimiter", "Leave blank for white space between elements"), dataDelimiter);
+        xPOS = EditorGUILayout.IntField(new GUIContent("X Index", "Index of X in data line"), xPOS);
+        yPOS = EditorGUILayout.IntField(new GUIContent("Y Index", "Index of Y in data line"), yPOS);
+        zPOS = EditorGUILayout.IntField(new GUIContent("Z Index", "Index of Z in data line"), zPOS);
 
-                colorRange = (ColorRange)EditorGUILayout.EnumPopup(new GUIContent("Color Range", "None(No Color), Normalized (0.0-1.0f), RGB(0-255)"), colorRange);
+        colorRange = (ColorRange)EditorGUILayout.EnumPopup(new GUIContent("Color Range", "None(No Color), Normalized (0.0-1.0f), RGB(0-255)"), colorRange);
 
-                if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB)
-                {
-                        rPOS = EditorGUILayout.IntField(new GUIContent("Red Index", "Index of Red color in data line"), rPOS);
-                        gPOS = EditorGUILayout.IntField(new GUIContent("Green Index", "Index of Green color in data line"), gPOS);
-                        bPOS = EditorGUILayout.IntField(new GUIContent("Blue Index", "Index of Blue color in data line"), bPOS);
-                }
-            EditorGUILayout.EndVertical();
+        if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB) {
+            rPOS = EditorGUILayout.IntField(new GUIContent("Red Index", "Index of Red color in data line"), rPOS);
+            gPOS = EditorGUILayout.IntField(new GUIContent("Green Index", "Index of Green color in data line"), gPOS);
+            bPOS = EditorGUILayout.IntField(new GUIContent("Blue Index", "Index of Blue color in data line"), bPOS);
+        }
+        EditorGUILayout.EndVertical();
 
         EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.Space();
-        
+
         GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
         buttonStyle.fontSize = 12;
         buttonStyle.fontStyle = FontStyle.Bold;
-        if (GUILayout.Button("Load Point Cloud File", buttonStyle, GUILayout.Height(50)))
-        {
-            LoadCloud(); 
+        if (GUILayout.Button("Load Point Cloud File", buttonStyle, GUILayout.Height(50))) {
+            LoadCloud();
         }
 
     }
 
 
-    private void LoadCloud()
-    {
+    private void LoadCloud() {
         //Get path to file with EditorUtility
         string path = EditorUtility.OpenFilePanel("Load Point Cloud File", "", "*");
 
@@ -98,13 +94,11 @@ public class PointCloudLoaderWindow : EditorWindow
 
         //Set data delimiter
         char delimiter = ' ';
-        try
-        {
+        try {
             if (dataDelimiter.Length != 0) delimiter = dataDelimiter.ToCharArray()[0];
 
         }
-        catch (NullReferenceException)
-        {
+        catch (NullReferenceException) {
         }
 
         //Create string to name future asset creation from file's name
@@ -137,44 +131,53 @@ public class PointCloudLoaderWindow : EditorWindow
         string line;
 
         //Could use a while loop but then cant show progress bar progression
-        int numberOfLines = File.ReadAllLines(path).Length;
+        String[] allLines = File.ReadAllLines(path);
+        int numberOfLines = allLines.Length;
         int numPoints = 0;
 
-        //For loop to count the number of data points (checks again elementsPerLine which is set by user)
-        //Calculates the min and max of all axis to center point cloud at origin
-        for (int i = 0; i < numberOfLines; i++)
-        {
-            line = sr.ReadLine();
-            string[] words = line.Split(delimiter);
 
-            //Only read data lines
-            if (words.Length == elementsPerLine)
-            {
-                numPoints++;
+        List<Thread> myThreads = new List<Thread>();
+        List<DataValues> myData = new List<DataValues>();
 
-                if (xMin > float.Parse(words[xPOS - 1]))
-                    xMin = float.Parse(words[xPOS - 1]);
-                if (xMax < float.Parse(words[xPOS - 1]))
-                    xMax = float.Parse(words[xPOS - 1]);
+        for (int i = 0; i < 4; i++) {
+            myData.Add(new DataValues());
+            myThreads.Add(new Thread(() => DataValuesGetMinMax(i, 4, allLines, myData[i])));
+            myThreads[i].Start();
+        }
 
-                if (yMin > float.Parse(words[yPOS - 1]))
-                    yMin = float.Parse(words[yPOS - 1]);
-                if (yMax < float.Parse(words[yPOS - 1]))
-                    yMax = float.Parse(words[yPOS - 1]);
+        for (int i = 0; i < 4; i++) {
+            myThreads[i].Join();
+        }
 
-                if (zMin > float.Parse(words[zPOS - 1]))
-                    zMin = float.Parse(words[zPOS - 1]);
-                if (zMax < float.Parse(words[zPOS - 1]))
-                    zMax = float.Parse(words[zPOS - 1]);
-
+        for (int i = 0; i < 4; i++) {
+            if (xMin > myData[i].XMin) {
+                xMin = myData[i].XMin;
             }
-
-            //Update progress bar -Only updates every 10,000 lines - DisplayProgressBar is not efficient and slows progress
-            progress = i * 1.0f / (numberOfLines - 1) * 1.0f;
-            if (i % 10000 == 0)
-                EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)((progress * 100) / 3) + "%", progress / 3);
+            if (xMax < myData[i].XMax) {
+                xMax = myData[i].XMax;
+            }
+            if (yMin > myData[i].YMin) {
+                yMin = myData[i].YMin;
+            }
+            if (yMax < myData[i].YMax) {
+                yMax = myData[i].YMax;
+            }
+            if (zMin > myData[i].ZMin) {
+                zMin = myData[i].ZMin;
+            }
+            if (zMax < myData[i].ZMax) {
+                zMax = myData[i].ZMax;
+            }
+            numPoints += myData[i].NumPoints;
 
         }
+
+        //Update progress bar -Only updates every 10,000 lines - DisplayProgressBar is not efficient and slows progress
+        //progress = i * 1.0f / (numberOfLines - 1) * 1.0f;
+        //if (i % 10000 == 0)
+        //    EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)((progress * 100) / 3) + "%", progress / 3);
+
+
 
         //Calculate origin of point cloud to shift cloud to unity origin
         float xAvg = (xMin + xMax) / 2;
@@ -189,14 +192,12 @@ public class PointCloudLoaderWindow : EditorWindow
         sr = new StreamReader(path);
 
         //For loop to create all the new vectors from the data points
-        for (int i = 0; i < numPoints; i++)
-        {
+        for (int i = 0; i < numPoints; i++) {
             line = sr.ReadLine();
             string[] words = line.Split(delimiter);
 
             //Only read data lines
-            while (words.Length != elementsPerLine)
-            {
+            while (words.Length != elementsPerLine) {
                 line = sr.ReadLine();
                 words = line.Split(' ');
             }
@@ -210,8 +211,7 @@ public class PointCloudLoaderWindow : EditorWindow
             float b = 1.0f;
 
             //If color range has been set also get color from data line
-            if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB)
-            {
+            if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB) {
                 r = float.Parse(words[rPOS - 1]) / (int)colorRange;
                 g = float.Parse(words[gPOS - 1]) / (int)colorRange;
                 b = float.Parse(words[bPOS - 1]) / (int)colorRange;
@@ -225,7 +225,7 @@ public class PointCloudLoaderWindow : EditorWindow
             //Update Progress Bar
             progress = i * 1.0f / (numPoints - 1) * 1.0f;
             if (i % 10000 == 0)
-                EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)(((progress * 100)/3) + 33) + "%", progress/3 + .33f);
+                EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)(((progress * 100) / 3) + 33) + "%", progress / 3 + .33f);
 
 
         }
@@ -248,8 +248,7 @@ public class PointCloudLoaderWindow : EditorWindow
         AssetDatabase.CreateAsset(newMat, "Assets/PointClouds/" + filename + "Material" + ".mat");
 
         //Create the sub meshes of the point cloud
-        for (int i = 0; i < numMeshes - 1; i++)
-        {
+        for (int i = 0; i < numMeshes - 1; i++) {
             CreateMeshGroup(i, limitPoints, filename, cloudGameObject, points, colors, newMat);
 
             progress = i * 1.0f / (numMeshes - 2) * 1.0f;
@@ -272,8 +271,7 @@ public class PointCloudLoaderWindow : EditorWindow
         return;
     }
 
-    private void CreateMeshGroup(int meshIndex, int numPoints, string filename, GameObject pointCloud, Vector3[] points, Color[] colors, Material mat)
-    {
+    private void CreateMeshGroup(int meshIndex, int numPoints, string filename, GameObject pointCloud, Vector3[] points, Color[] colors, Material mat) {
 
         //Create GameObject and set parent
         GameObject pointGroup = new GameObject(filename + meshIndex);
@@ -293,8 +291,7 @@ public class PointCloudLoaderWindow : EditorWindow
         Vector3[] meshPoints = new Vector3[numPoints];
         Color[] meshColors = new Color[numPoints];
 
-        for (int i = 0; i < numPoints; ++i)
-        {
+        for (int i = 0; i < numPoints; ++i) {
             indecies[i] = i;
             meshPoints[i] = points[meshIndex * limitPoints + i];
             meshColors[i] = colors[meshIndex * limitPoints + i];
@@ -317,4 +314,34 @@ public class PointCloudLoaderWindow : EditorWindow
         return;
     }
 
+    public void DataValuesGetMinMax(int threadID, int totalThreads, String[] allLines, DataValues data) {
+        int partialLines = allLines.Length / totalThreads;
+        for (int i = threadID * partialLines; i < (threadID + 1) * partialLines; i++) {
+
+            string[] words = allLines[i].Split(' ');
+
+            //Only read data lines
+            if (words.Length == elementsPerLine) {
+                data.NumPoints++;
+
+                if (data.XMin > float.Parse(words[xPOS - 1]))
+                    data.XMin = float.Parse(words[xPOS - 1]);
+                if (data.XMax < float.Parse(words[xPOS - 1]))
+                    data.XMax = float.Parse(words[xPOS - 1]);
+
+                if (data.YMin > float.Parse(words[yPOS - 1]))
+                    data.YMin = float.Parse(words[yPOS - 1]);
+                if (data.YMax < float.Parse(words[yPOS - 1]))
+                    data.YMax = float.Parse(words[yPOS - 1]);
+
+                if (data.ZMin > float.Parse(words[zPOS - 1]))
+                    data.ZMin = float.Parse(words[zPOS - 1]);
+                if (data.ZMax < float.Parse(words[zPOS - 1]))
+                    data.ZMax = float.Parse(words[zPOS - 1]);
+
+            }
+        }
+    }
 }
+
+
