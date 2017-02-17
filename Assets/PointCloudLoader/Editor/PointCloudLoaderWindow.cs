@@ -145,7 +145,7 @@ public class PointCloudLoaderWindow : EditorWindow {
         for (int i = 0; i < numberOfThreads; i++) {
             myData.Add(new DataValues());
             int tempI = i;
-            myThreads.Add(new Thread(() => DataValuesGetMinMax(tempI, numberOfThreads, delimiter, allLines, myData[tempI])));
+            myThreads.Add(new Thread(() => DataValuesGetMinMax(tempI, numberOfThreads, delimiter, ref allLines, myData[tempI])));
             myThreads[tempI].Start();
         }
 
@@ -154,6 +154,7 @@ public class PointCloudLoaderWindow : EditorWindow {
         }
 
         for (int i = 0; i < numberOfThreads; i++) {
+      
             if (xMin > myData[i].XMin) {
                 xMin = myData[i].XMin;
             }
@@ -180,7 +181,6 @@ public class PointCloudLoaderWindow : EditorWindow {
         //progress = i * 1.0f / (numberOfLines - 1) * 1.0f;
         //if (i % 10000 == 0)
         //    EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)((progress * 100) / 3) + "%", progress / 3);
-
 
 
         //Calculate origin of point cloud to shift cloud to unity origin
@@ -318,7 +318,7 @@ public class PointCloudLoaderWindow : EditorWindow {
         return;
     }
 
-    public void DataValuesGetMinMax(int threadID, int totalThreads, char delimiter, String[] allLines, DataValues data) {
+    public void DataValuesGetMinMax(int threadID, int totalThreads, char delimiter, ref String[] allLines, DataValues data) {
         Debug.Log("I am Thread " + threadID);
         int partialLines = allLines.Length / totalThreads;
         int start = threadID * partialLines;
