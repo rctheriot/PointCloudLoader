@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -87,7 +88,37 @@ public class PointCloudLoaderWindow : EditorWindow
 
     }
 
+    private float[] findValues(string filename)
+    {
 
+
+        ProcessStartInfo start = new ProcessStartInfo();
+        start.FileName = @".\Assets\PointCloudLoader\Editor\findValues.exe";
+        start.Arguments = string.Format("{0}", filename);
+        start.UseShellExecute = false;
+        start.RedirectStandardOutput = true;
+        start.CreateNoWindow = true;
+
+        float[] result;
+
+        using (Process process = Process.Start(start))
+        {
+            using (StreamReader reader = process.StandardOutput)
+            {
+                var stringResult = reader.ReadLine();
+                string[] results = stringResult.Split(' ');
+                float[] theResult = new float[results.Length];
+                for (int i = 0; i < results.Length; i++)
+                {
+                    theResult[i] = float.Parse(results[i]);
+                }
+                result = theResult;
+            }
+        }
+
+        return result;
+    }
+    
     private void LoadCloud()
     {
         //Get path to file with EditorUtility
@@ -110,7 +141,7 @@ public class PointCloudLoaderWindow : EditorWindow
         //Create string to name future asset creation from file's name
         string filename = null;
         try { filename = Path.GetFileName(path).Split('.')[0]; }
-        catch (ArgumentOutOfRangeException e) { Debug.LogError("PointCloudLoader: File must have an extension. (.pts, .xyz....etc)" + e); }
+        catch (ArgumentOutOfRangeException e) { UnityEngine.Debug.LogError("PointCloudLoader: File must have an extension. (.pts, .xyz....etc)" + e); }
 
         //Create PointCloud Directories
         if (!Directory.Exists(Application.dataPath + "/PointClouds/"))
@@ -134,40 +165,62 @@ public class PointCloudLoaderWindow : EditorWindow
 
         //Streamreader to read data file
         StreamReader sr = new StreamReader(path);
-        string line;
+        // string line;
 
         //Could use a while loop but then cant show progress bar progression
-        int numberOfLines = File.ReadAllLines(path).Length;
+        String[] allLines = File.ReadAllLines(path);
+        int numberOfLines = allLines.Length;
         int numPoints = 0;
 
+        //Gets values from python executable
+        float[] values = findValues(path);
+        numPoints = (int)Math.Ceiling(values[0]);
+        xMin = values[1];
+        yMin = values[2];
+        zMin = values[3];
+        xMax = values[4];
+        yMax = values[5];
+        zMax = values[6];
+        float pointSize = values[7];
+        
+        string[] validPoints = new string[numPoints];
+
+        // Temp Varaible
+        int j = 0;
+        
         //For loop to count the number of data points (checks again elementsPerLine which is set by user)
         //Calculates the min and max of all axis to center point cloud at origin
         for (int i = 0; i < numberOfLines; i++)
         {
-            line = sr.ReadLine();
-            string[] words = line.Split(delimiter);
-
-            //Only read data lines
+            string[] words = allLines[i].Split(delimiter);
+            
             if (words.Length == elementsPerLine)
             {
-                numPoints++;
-
-                if (xMin > float.Parse(words[xPOS - 1]))
-                    xMin = float.Parse(words[xPOS - 1]);
-                if (xMax < float.Parse(words[xPOS - 1]))
-                    xMax = float.Parse(words[xPOS - 1]);
-
-                if (yMin > float.Parse(words[yPOS - 1]))
-                    yMin = float.Parse(words[yPOS - 1]);
-                if (yMax < float.Parse(words[yPOS - 1]))
-                    yMax = float.Parse(words[yPOS - 1]);
-
-                if (zMin > float.Parse(words[zPOS - 1]))
-                    zMin = float.Parse(words[zPOS - 1]);
-                if (zMax < float.Parse(words[zPOS - 1]))
-                    zMax = float.Parse(words[zPOS - 1]);
-
+                validPoints[j] = allLines[i];
+                j++;
             }
+
+            //Only read data lines
+            // if (words.Length == elementsPerLine)
+            // {
+                // numPoints++;
+
+                // if (xMin > float.Parse(words[xPOS - 1]))
+                    // xMin = float.Parse(words[xPOS - 1]);
+                // if (xMax < float.Parse(words[xPOS - 1]))
+                    // xMax = float.Parse(words[xPOS - 1]);
+
+                // if (yMin > float.Parse(words[yPOS - 1]))
+                    // yMin = float.Parse(words[yPOS - 1]);
+                // if (yMax < float.Parse(words[yPOS - 1]))
+                    // yMax = float.Parse(words[yPOS - 1]);
+
+                // if (zMin > float.Parse(words[zPOS - 1]))
+                    // zMin = float.Parse(words[zPOS - 1]);
+                // if (zMax < float.Parse(words[zPOS - 1]))
+                    // zMax = float.Parse(words[zPOS - 1]);
+
+            // }
 
             //Update progress bar -Only updates every 10,000 lines - DisplayProgressBar is not efficient and slows progress
             progress = i * 1.0f / (numberOfLines - 1) * 1.0f;
@@ -186,19 +239,18 @@ public class PointCloudLoaderWindow : EditorWindow
         Color[] colors = new Color[numPoints];
 
         //Reset Streamreader
-        sr = new StreamReader(path);
+        // sr = new StreamReader(path);
 
         //For loop to create all the new vectors from the data points
         for (int i = 0; i < numPoints; i++)
         {
-            line = sr.ReadLine();
-            string[] words = line.Split(delimiter);
+            // line = sr.ReadLine();
+            string[] words = validPoints[i].Split(delimiter);
 
             //Only read data lines
             while (words.Length != elementsPerLine)
             {
-                line = sr.ReadLine();
-                words = line.Split(' ');
+                continue;
             }
 
             //Read data line for XYZ and RGB
@@ -250,7 +302,7 @@ public class PointCloudLoaderWindow : EditorWindow
         //Create the sub meshes of the point cloud
         for (int i = 0; i < numMeshes - 1; i++)
         {
-            CreateMeshGroup(i, limitPoints, filename, cloudGameObject, points, colors, newMat);
+            CreateMeshGroup(i, limitPoints, filename, cloudGameObject, points, colors, newMat, pointSize);
 
             progress = i * 1.0f / (numMeshes - 2) * 1.0f;
             if (i % 2 == 0)
@@ -259,7 +311,7 @@ public class PointCloudLoaderWindow : EditorWindow
         }
         //Create one last mesh from the remaining points
         int remainPoints = (numMeshes - 1) * limitPoints;
-        CreateMeshGroup(numMeshes - 1, numPoints - remainPoints, filename, cloudGameObject, points, colors, newMat);
+        CreateMeshGroup(numMeshes - 1, numPoints - remainPoints, filename, cloudGameObject, points, colors, newMat, pointSize);
 
         progress = 100.0f;
         EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + progress + "%", 1.0f);
@@ -272,7 +324,7 @@ public class PointCloudLoaderWindow : EditorWindow
         return;
     }
 
-    private void CreateMeshGroup(int meshIndex, int numPoints, string filename, GameObject pointCloud, Vector3[] points, Color[] colors, Material mat)
+    private void CreateMeshGroup(int meshIndex, int numPoints, string filename, GameObject pointCloud, Vector3[] points, Color[] colors, Material mat, float pointSize)
     {
 
         //Create GameObject and set parent
@@ -287,6 +339,7 @@ public class PointCloudLoaderWindow : EditorWindow
         //Add Mesh Renderer and material
         pointGroup.AddComponent<MeshRenderer>();
         pointGroup.GetComponent<Renderer>().material = mat;
+        pointGroup.GetComponent<Renderer>().sharedMaterial.SetFloat("_Size", pointSize);
 
         //Create points and color arrays
         int[] indecies = new int[numPoints];
