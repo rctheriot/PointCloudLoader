@@ -28,6 +28,9 @@ public class PointCloudLoaderWindow : EditorWindow {
     //Maximum vertices a mesh can have in Unity
     static int limitPoints = 65000;
 
+    //Specifies the number of threads to use for parsing
+    private int numberOfThreads = 2;
+
     [MenuItem("Window/PointClouds/LoadCloud")]
     private static void ShowEditor() {
         EditorWindow window = GetWindow(typeof(PointCloudLoaderWindow), true, "Point Cload Loader");
@@ -139,17 +142,18 @@ public class PointCloudLoaderWindow : EditorWindow {
         List<Thread> myThreads = new List<Thread>();
         List<DataValues> myData = new List<DataValues>();
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < numberOfThreads; i++) {
             myData.Add(new DataValues());
-            myThreads.Add(new Thread(() => DataValuesGetMinMax(i, 4, allLines, myData[i])));
-            myThreads[i].Start();
+            int tempI = i;
+            myThreads.Add(new Thread(() => DataValuesGetMinMax(tempI, numberOfThreads, delimiter, allLines, myData[tempI])));
+            myThreads[tempI].Start();
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < numberOfThreads; i++) {
             myThreads[i].Join();
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < numberOfThreads; i++) {
             if (xMin > myData[i].XMin) {
                 xMin = myData[i].XMin;
             }
@@ -314,13 +318,14 @@ public class PointCloudLoaderWindow : EditorWindow {
         return;
     }
 
-    public void DataValuesGetMinMax(int threadID, int totalThreads, String[] allLines, DataValues data) {
+    public void DataValuesGetMinMax(int threadID, int totalThreads, char delimiter, String[] allLines, DataValues data) {
+        Debug.Log("I am Thread " + threadID);
         int partialLines = allLines.Length / totalThreads;
         int start = threadID * partialLines;
         int end = (threadID + 1) * partialLines;
         for (int i = start; i < end; i++) {
 
-            string[] words = allLines[i].Split(' ');
+            string[] words = allLines[i].Split(delimiter);
 
             //Only read data lines
             if (words.Length == elementsPerLine) {
