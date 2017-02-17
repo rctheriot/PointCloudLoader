@@ -316,7 +316,9 @@ public class PointCloudLoaderWindow : EditorWindow {
 
     public void DataValuesGetMinMax(int threadID, int totalThreads, String[] allLines, DataValues data) {
         int partialLines = allLines.Length / totalThreads;
-        for (int i = threadID * partialLines; i < (threadID + 1) * partialLines; i++) {
+        int start = threadID * partialLines;
+        int end = (threadID + 1) * partialLines;
+        for (int i = start; i < end; i++) {
 
             string[] words = allLines[i].Split(' ');
 
