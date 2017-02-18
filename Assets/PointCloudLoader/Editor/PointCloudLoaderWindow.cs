@@ -3,6 +3,10 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
+// Unity Point Cloud Loader
+// (C) 2016 Ryan Theriot, Eric Wu, Jack Lam. Laboratory for Advanced Visualization & Applications, University of Hawaii at Manoa.
+// Version: February 17th, 2017
+
 public class PointCloudLoaderWindow : EditorWindow
 {
     //Number of elements per data line from input file
@@ -286,7 +290,7 @@ public class PointCloudLoaderWindow : EditorWindow
 
         //Add Mesh Renderer and material
         pointGroup.AddComponent<MeshRenderer>();
-        pointGroup.GetComponent<Renderer>().material = mat;
+        pointGroup.GetComponent<Renderer>().sharedMaterial = mat;
 
         //Create points and color arrays
         int[] indecies = new int[numPoints];

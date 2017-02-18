@@ -1,4 +1,8 @@
-﻿Shader "PointCloudShader" 
+﻿// Unity Point Cloud Loader
+// (C) 2016 Ryan Theriot, Eric Wu, Jack Lam. Laboratory for Advanced Visualization & Applications, University of Hawaii at Manoa.
+// Version: February 17th, 2017
+
+Shader "PointCloudShader" 
 {
 	Properties 
 	{
@@ -65,13 +69,13 @@
 				look = normalize(look);
 				float3 right = cross(up, look);
 					
-				float halfS = 0.5f * _Size;
+				float size = 0.5f * _Size;
 							
 				float4 v[4];
-				v[0] = float4(p[0].pos + halfS * right - halfS * up, 1.0f);
-				v[1] = float4(p[0].pos + halfS * right + halfS * up, 1.0f);
-				v[2] = float4(p[0].pos - halfS * right - halfS * up, 1.0f);
-				v[3] = float4(p[0].pos - halfS * right + halfS * up, 1.0f);
+				v[0] = float4(p[0].pos + size * right - size * up, 1.0f);
+				v[1] = float4(p[0].pos + size * right + size * up, 1.0f);
+				v[2] = float4(p[0].pos - size * right - size * up, 1.0f);
+				v[3] = float4(p[0].pos - size * right + size * up, 1.0f);
 
 				float4x4 vp = mul(UNITY_MATRIX_MVP, _World2Object);
 				FS_INPUT pIn;
