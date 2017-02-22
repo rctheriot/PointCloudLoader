@@ -88,7 +88,7 @@ public class PointCloudLoaderWindow : EditorWindow
 
     }
 
-    private float[] findValues(string filename)
+    private double[] findValues(string filename)
     {
 
 
@@ -99,7 +99,7 @@ public class PointCloudLoaderWindow : EditorWindow
         start.RedirectStandardOutput = true;
         start.CreateNoWindow = true;
 
-        float[] result;
+        double[] result;
 
         using (Process process = Process.Start(start))
         {
@@ -107,10 +107,10 @@ public class PointCloudLoaderWindow : EditorWindow
             {
                 var stringResult = reader.ReadLine();
                 string[] results = stringResult.Split(' ');
-                float[] theResult = new float[results.Length];
+                double[] theResult = new double[results.Length];
                 for (int i = 0; i < results.Length; i++)
                 {
-                    theResult[i] = float.Parse(results[i]);
+                    theResult[i] = double.Parse(results[i]);
                 }
                 result = theResult;
             }
@@ -156,12 +156,12 @@ public class PointCloudLoaderWindow : EditorWindow
         EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + (int)(progress * 100) + "%", progress);
 
         //Setup variables so we can use them to center the PointCloud at origin
-        float xMin = float.MaxValue;
-        float xMax = float.MinValue;
-        float yMin = float.MaxValue;
-        float yMax = float.MinValue;
-        float zMin = float.MaxValue;
-        float zMax = float.MinValue;
+        double xMin = double.MaxValue;
+        double xMax = double.MinValue;
+        double yMin = double.MaxValue;
+        double yMax = double.MinValue;
+        double zMin = double.MaxValue;
+        double zMax = double.MinValue;
 
         //Streamreader to read data file
         StreamReader sr = new StreamReader(path);
@@ -173,7 +173,7 @@ public class PointCloudLoaderWindow : EditorWindow
         int numPoints = 0;
 
         //Gets values from python executable
-        float[] values = findValues(path);
+        double[] values = findValues(path);
         numPoints = (int)Math.Ceiling(values[0]);
         xMin = values[1];
         yMin = values[2];
@@ -181,7 +181,7 @@ public class PointCloudLoaderWindow : EditorWindow
         xMax = values[4];
         yMax = values[5];
         zMax = values[6];
-        float pointSize = values[7];
+        double pointSize = values[7];
         
         string[] validPoints = new string[numPoints];
 
@@ -230,9 +230,9 @@ public class PointCloudLoaderWindow : EditorWindow
         }
 
         //Calculate origin of point cloud to shift cloud to unity origin
-        float xAvg = (xMin + xMax) / 2;
-        float yAvg = (yMin + yMax) / 2;
-        float zAvg = (zMin + zMax) / 2;
+        double xAvg = (xMin + xMax) / 2;
+        double yAvg = (yMin + yMax) / 2;
+        double zAvg = (zMin + zMax) / 2;
 
         //Setup array for the points and their colors
         Vector3[] points = new Vector3[numPoints];
@@ -254,9 +254,9 @@ public class PointCloudLoaderWindow : EditorWindow
             }
 
             //Read data line for XYZ and RGB
-            float x = float.Parse(words[xPOS - 1]) - xAvg;
-            float y = float.Parse(words[yPOS - 1]) - yAvg;
-            float z = (float.Parse(words[zPOS - 1]) - zAvg) * -1; //Flips to Unity's Left Handed Coorindate System
+            float x = float.Parse(words[xPOS - 1]) - (float)xAvg;
+            float y = float.Parse(words[yPOS - 1]) - (float)yAvg;
+            float z = (float.Parse(words[zPOS - 1]) - (float)zAvg) * -1; //Flips to Unity's Left Handed Coorindate System
             float r = 1.0f;
             float g = 1.0f;
             float b = 1.0f;
@@ -302,7 +302,7 @@ public class PointCloudLoaderWindow : EditorWindow
         //Create the sub meshes of the point cloud
         for (int i = 0; i < numMeshes - 1; i++)
         {
-            CreateMeshGroup(i, limitPoints, filename, cloudGameObject, points, colors, newMat, pointSize);
+            CreateMeshGroup(i, limitPoints, filename, cloudGameObject, points, colors, newMat, (float)pointSize);
 
             progress = i * 1.0f / (numMeshes - 2) * 1.0f;
             if (i % 2 == 0)
@@ -311,7 +311,7 @@ public class PointCloudLoaderWindow : EditorWindow
         }
         //Create one last mesh from the remaining points
         int remainPoints = (numMeshes - 1) * limitPoints;
-        CreateMeshGroup(numMeshes - 1, numPoints - remainPoints, filename, cloudGameObject, points, colors, newMat, pointSize);
+        CreateMeshGroup(numMeshes - 1, numPoints - remainPoints, filename, cloudGameObject, points, colors, newMat, (float)pointSize);
 
         progress = 100.0f;
         EditorUtility.DisplayProgressBar("Progress", "Percent Complete: " + progress + "%", 1.0f);
