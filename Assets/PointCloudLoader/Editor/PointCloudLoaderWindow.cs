@@ -25,6 +25,17 @@ public class PointCloudLoaderWindow : EditorWindow
     }
     private static ColorRange colorRange;
 
+    //Enumber for format standards
+    private enum FormatStandard
+    {
+        CUSTOM = 0,
+        PTS = 1,
+        XYZ = 2,
+        XYZRGB = 3
+    }
+    private static FormatStandard formatStandard;
+
+
     //Data line delimiter  
     public static string dataDelimiter;
 
@@ -35,7 +46,7 @@ public class PointCloudLoaderWindow : EditorWindow
     private static void ShowEditor()
     {
         EditorWindow window = GetWindow(typeof(PointCloudLoaderWindow), true, "Point Cload Loader");
-        window.maxSize = new Vector2 (385f, 355f);
+        window.maxSize = new Vector2 (385f, 375f);
         window.minSize = window.maxSize;
     }
 
@@ -58,26 +69,64 @@ public class PointCloudLoaderWindow : EditorWindow
                                 "5. Set the index of the RGB elements on the data line. (First element = 1) \n" +
                                 "6. Click \"Load Point Cloud File\"", MessageType.None);
 
-        EditorGUILayout.BeginHorizontal();
+        formatStandard = (FormatStandard)EditorGUILayout.EnumPopup(new GUIContent("Format", ""), formatStandard);
+
+        if (formatStandard == FormatStandard.CUSTOM)
+        {
+            EditorGUILayout.BeginHorizontal();
 
             EditorGUILayout.BeginVertical();
-                elementsPerLine = EditorGUILayout.IntField(new GUIContent("Elements Per Data Line", "The Number of Elements in the data line"), elementsPerLine);
-                dataDelimiter = EditorGUILayout.TextField(new GUIContent("Data Line Delimiter", "Leave blank for white space between elements"), dataDelimiter);
-                xPOS = EditorGUILayout.IntField(new GUIContent("X Index", "Index of X in data line"), xPOS);
-                yPOS = EditorGUILayout.IntField(new GUIContent("Y Index", "Index of Y in data line"), yPOS);
-                zPOS = EditorGUILayout.IntField(new GUIContent("Z Index", "Index of Z in data line"), zPOS);
+            elementsPerLine = EditorGUILayout.IntField(new GUIContent("Elements Per Data Line", "The Number of Elements in the data line"), elementsPerLine);
+            dataDelimiter = EditorGUILayout.TextField(new GUIContent("Data Line Delimiter", "Leave blank for white space between elements"), dataDelimiter);
+            xPOS = EditorGUILayout.IntField(new GUIContent("X Index", "Index of X in data line"), xPOS);
+            yPOS = EditorGUILayout.IntField(new GUIContent("Y Index", "Index of Y in data line"), yPOS);
+            zPOS = EditorGUILayout.IntField(new GUIContent("Z Index", "Index of Z in data line"), zPOS);
 
-                colorRange = (ColorRange)EditorGUILayout.EnumPopup(new GUIContent("Color Range", "None(No Color), Normalized (0.0-1.0f), RGB(0-255)"), colorRange);
+            colorRange = (ColorRange)EditorGUILayout.EnumPopup(new GUIContent("Color Range", "None(No Color), Normalized (0.0-1.0f), RGB(0-255)"), colorRange);
 
-                if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB)
-                {
-                        rPOS = EditorGUILayout.IntField(new GUIContent("Red Index", "Index of Red color in data line"), rPOS);
-                        gPOS = EditorGUILayout.IntField(new GUIContent("Green Index", "Index of Green color in data line"), gPOS);
-                        bPOS = EditorGUILayout.IntField(new GUIContent("Blue Index", "Index of Blue color in data line"), bPOS);
-                }
+            if (colorRange == ColorRange.NORMALIZED || colorRange == ColorRange.RGB)
+            {
+                rPOS = EditorGUILayout.IntField(new GUIContent("Red Index", "Index of Red color in data line"), rPOS);
+                gPOS = EditorGUILayout.IntField(new GUIContent("Green Index", "Index of Green color in data line"), gPOS);
+                bPOS = EditorGUILayout.IntField(new GUIContent("Blue Index", "Index of Blue color in data line"), bPOS);
+            }
             EditorGUILayout.EndVertical();
 
-        EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndHorizontal();
+        }
+        else if (formatStandard == FormatStandard.PTS)
+        {
+            elementsPerLine = 7;
+            dataDelimiter = "";
+            xPOS = 1;
+            yPOS = 2;
+            zPOS = 3;
+            colorRange = ColorRange.RGB;
+            rPOS = 5;
+            gPOS = 6;
+            bPOS = 7;
+        }
+        else if (formatStandard == FormatStandard.XYZ)
+        {
+            elementsPerLine = 3;
+            dataDelimiter = "";
+            xPOS = 1;
+            yPOS = 2;
+            zPOS = 3;
+            colorRange = ColorRange.NONE;
+        }
+        else if (formatStandard == FormatStandard.XYZRGB)
+        {
+            elementsPerLine = 7;
+            dataDelimiter = "";
+            xPOS = 1;
+            yPOS = 2;
+            zPOS = 3;
+            colorRange = ColorRange.NORMALIZED;
+            rPOS = 4;
+            gPOS = 5;
+            bPOS = 6;
+        }
 
         EditorGUILayout.Space();
         
