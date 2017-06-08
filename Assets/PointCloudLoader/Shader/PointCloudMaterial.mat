@@ -7,29 +7,19 @@ Material:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_Name: PointCloudMaterial
-  m_Shader: {fileID: 4800000, guid: deef4b10b1a164c4a83c1690826ddaa3, type: 3}
+  m_Shader: {fileID: 4800000, guid: e34b3b3ddb341a043a8f97c229510b57, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 5
+  m_EnableInstancingVariants: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
+  disabledShaderPasses: []
   m_SavedProperties:
-    serializedVersion: 2
-    m_TexEnvs: {}
+    serializedVersion: 3
+    m_TexEnvs: []
     m_Floats:
-      data:
-        first:
-          name: _Size
-        second: .00600000005
-      data:
-        first:
-          name: _Shape
-        second: 1
-      data:
-        first:
-          name: _UniformColor
-        second: 1
+    - _Shape: 1
+    - _Size: 0.006
+    - _UniformColor: 1
     m_Colors:
-      data:
-        first:
-          name: _Color
-        second: {r: .451989621, g: .463891566, b: .698529422, a: 1}
+    - _Color: {r: 0.45198962, g: 0.46389157, b: 0.6985294, a: 1}

@@ -1,8 +1,11 @@
 Unity Point Cloud Loader
-(C) 2016 Ryan Theriot, Eric Wu, Jack Lam Laboratory for Advanced Visualization & Applications, University of Hawaii at Manoa.
-Version: February 17th, 2017
+(C) 2017 Ryan Theriot, Eric Wu, Jack Lam Laboratory for Advanced Visualization & Applications, University of Hawaii at Manoa.
+Version: June 7th, 2017
 
 Questions? Email: rtheriot@hawaii.edu 
+
+---June 7th, 2017---
+Fixed shader error present in Unity version 5.6+
 
 ---Februrary 17th 2017 ---
 This project is still in development and this is an experimental release.
@@ -28,7 +31,7 @@ For Example:
 -28.736666 -24.107421 19.453160 113 30 145 170
 
 Elements Per Data Line: 7
-Data Line Elimiter: Leave Blank (White Space)
+Data Line delimiter: Leave Blank (White Space)
 X Index: 1
 Y Index: 2
 Z Index: 3
